@@ -16,11 +16,12 @@
 
     Sensor list:
     - Plug & Sense! SCP WiFi
-    - 9370-P    Temperature, Humidity and Pressure Probe          ºC - %RH - Pa
-    - NLS       Noise Level Sensor                                dBA
-    - 9372-P    Carbon Dioxide Probe                              ppm
-    - 9387-P    Particle Matter (PM1 / PM2.5/ PM10) - Dust Probe  og/m3
-    - 9375-P    Luminosity Probe                                  lux
+
+    A - NLS       Noise Level Sensor                                dBA
+    B - 9372-P    Carbon Dioxide Probe                              ppm
+    C - 9375-P    Luminosity Probe                                  lux
+    D - 9387-P    Particle Matter (PM1 / PM2.5/ PM10) - Dust Probe  og/m3
+    F - 9370-P    Temperature, Humidity and Pressure Probe          ºC - %RH - Pa
 
     Strategy:
     - Assign static IP
@@ -59,7 +60,7 @@
     http://www.hivemq.com/blog/mqtt-essentials-part-6-mqtt-quality-of-service-levels
 
 */
-
+#include "Configuration.h"
 //=========| INCLUDE LIBRARIES, speculative at this time
 #include <WaspFrame.h>
 #include <WaspSensorCities_PRO.h>
@@ -74,7 +75,7 @@
 int SEND_EVERY_N_LOOPS = 10;
 int SNAPSHOTS =  10;
 
-Gas gas_PRO_sensor(SOCKET_1);
+Gas gas_PRO_sensor(SOCKET_B);
 
 int frameCounter;
 int loopCounter;
@@ -86,11 +87,6 @@ float ambNoise;
 float co2;
 float luminosity;
 
-//=========| DEFINE AUXILIARY GLOBALS
-char MOTE_ID[]     = "Waspmote_AP";
-char MAC_ADDRESS[] = "0013A200409C788A"; // Destination MAC address
-char AES_KEY[]     = "testeencription";
-
 void setup() {
   /* Setup Waspmote */
   frame.setID(MOTE_ID); // store Waspmote ID in EEPROM memory (16-byte max)
@@ -99,7 +95,7 @@ void setup() {
   USB.ON();
   USB.println(F("Libelium Awake"));
 
-  Gas gas_PRO_sensor(SOCKET_1);
+  Gas gas_PRO_sensor(SOCKET_B);
 
   /* Configure noise sensor for UART communication */
   noise.configure();
@@ -107,19 +103,17 @@ void setup() {
   /* Initialize Variables */
   frameCounter = 0;
   loopCounter  = 0;
-  
+
 }
 
 
 void loop(){
-
-  /* GAS Sensors have warming up time, turn on and sleep */
-  USB.println("Turning on GAS Sensors");
-  SensorCitiesPRO.ON(SOCKET_1);   // SOCKET 1 is gas
-  SensorCitiesPRO.ON(SOCKET_2);   // SOCKET 2 is temperature
-  SensorCitiesPRO.ON(SOCKET_B);   // SOCKET B is
-  SensorCitiesPRO.ON(SOCKET_C);   // SOCKET C is
-  SensorCitiesPRO.ON(SOCKET_E);   // SOCKET E is
+  USB.println("Turning on sensors");
+  SensorCitiesPRO.ON(SOCKET_A);
+  SensorCitiesPRO.ON(SOCKET_B);
+  SensorCitiesPRO.ON(SOCKET_C);
+  SensorCitiesPRO.ON(SOCKET_D);
+  SensorCitiesPRO.ON(SOCKET_E);
   gas_PRO_sensor.ON();
 
 
@@ -129,7 +123,7 @@ void loop(){
   //=========| READ VALUES
   USB.ON();                             // Restart USB after sleep
   USB.println("Reading Sensor Values");
-  
+
   /* === Get snapshots from sensors temperature === */
   float t = 0.0f;                                   // INITIALIZE AUX
   for (int i = 0; i < SNAPSHOTS; i++) {
@@ -165,7 +159,7 @@ void loop(){
   c /= SNAPSHOTS;                                   // CALCULATE AVERAGE
   co2 = c;                                          // UPDATE VARIABLE
   //========================================================================
-    
+
   /* === Get snapshots from sensors noise === */
   int status = noise.getSPLA(SLOW_MODE);
 
@@ -188,13 +182,13 @@ void loop(){
  //========================================================================
 
   /* === Get  snapshots from sensors luminosity === */
-  SensorCitiesPRO.ON(SOCKET_2);                   // SENSOR ON SOCKET 2
+  SensorCitiesPRO.ON(SOCKET_C);                   // SENSOR ON SOCKET 2
   TSL.ON();                                       // POWER ON SENSOR
   float l = 0.0f;                                 // AUX
   for (int i = 0; i < SNAPSHOTS; i++) {
     l += TSL.getLuminosity();                     // READ VALUES
   }
-  SensorCitiesPRO.OFF(SOCKET_2);                  // POWER OFF SOCKET 2
+  SensorCitiesPRO.OFF(SOCKET_C);                  // POWER OFF SOCKET 2
   l /= SNAPSHOTS;                                 // CALCULATE AVERAGE
   luminosity = l;                                // UPDATE ARRAY
   //========================================================================}

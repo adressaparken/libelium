@@ -1,0 +1,3 @@
+#define MAC_ADDRESS "0013A200409C788A"
+#define MOTE_ID "Waspmote_AP"
+#define WIFI_PASSWORD "qwerty"
