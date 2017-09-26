@@ -28,9 +28,8 @@
     - Connect to Gateway at 192.168.1.1
     - Turn ON sensors
     - Get data from sensors, final data is average
-    - - DO THIS x SEND_EVERY_N_LOOPS - 10
     - Send all data to Gateway
-    - - Gateway sends data to server over MQTT
+    - Gateway sends data to server over MQTT
     - Sleep
 
     TODO:
@@ -61,7 +60,7 @@
 
 */
 #include "Configuration.h"
-//=========| INCLUDE LIBRARIES, speculative at this time
+#include <WaspWIFI_PRO.h>
 #include <WaspFrame.h>
 #include <WaspSensorCities_PRO.h>
 #include <WaspOPC_N2.h>             // Particle Matter
@@ -70,162 +69,170 @@
 #include <WaspOPC_N2.h>             // Particle Matter
 
 
-//=========| DEFINE SENSOR DATA GLOBALS,
 
-int SEND_EVERY_N_LOOPS = 10;
 int SNAPSHOTS =  10;
 
-Gas gas_PRO_sensor(SOCKET_B);
+Gas gas_PRO_sensor(SOCKET_F);
 
-int frameCounter;
-int loopCounter;
+char type[] = "http";
+char host[] = "10.10.10.1";
+char port[] = "80";
 
-float temperature;
-float humidity;
-float pressure;
-float ambNoise;
-float co2;
-float luminosity;
 
 void setup() {
-  /* Setup Waspmote */
-  frame.setID(MOTE_ID); // store Waspmote ID in EEPROM memory (16-byte max)
+  frame.setID(MOTE_ID);
 
-  /* Opening UART to show messages using 'Serial Monitor' (Debug) */
-  USB.ON();
   USB.println(F("Libelium Awake"));
 
-  Gas gas_PRO_sensor(SOCKET_B);
-
-  /* Configure noise sensor for UART communication */
-  noise.configure();
-
-  /* Initialize Variables */
-  frameCounter = 0;
-  loopCounter  = 0;
-
+  USB.println(F("Wifi on"));
+  USB.println(WIFI_PRO.ON(SOCKET0) == 0 ? F("[OK]") : F("[ERROR]"));
+  USB.println(F("Reset wifi settings"));
+  USB.println(WIFI_PRO.resetValues() == 0 ? F("[OK]") : F("[ERROR]"));
+  USB.println(F("Set SSID"));
+  USB.println(WIFI_PRO.setESSID(SSID) == 0 ? F("[OK]") : F("[ERROR]"));
+  USB.println(F("Configure security"));
+  USB.println(WIFI_PRO.setPassword(OPEN, WIFI_PASSWORD) == 0 ? F("[OK]") : F("[ERROR]"));//Alt: OPEN, WEP64, WEP128, WPA (WPA-PSK with TKIP encryption), WPA2 (WPA2-PSK with TKIP or AES encryption)
+  USB.println(F("Restart wifi"));
+  USB.println(WIFI_PRO.softReset() == 0 ? F("[OK]") : F("[ERROR]"));
+  
 }
 
 
 void loop(){
-  USB.println("Turning on sensors");
-  SensorCitiesPRO.ON(SOCKET_A);
-  SensorCitiesPRO.ON(SOCKET_B);
-  SensorCitiesPRO.ON(SOCKET_C);
-  SensorCitiesPRO.ON(SOCKET_D);
-  SensorCitiesPRO.ON(SOCKET_E);
-  gas_PRO_sensor.ON();
+  //PWR.deepSleep("00:00:01:00", RTC_OFFSET, RTC_ALM1_MODE1, ALL_ON);
+  
+  USB.println(F("Wifi on"));
+  USB.println(WIFI_PRO.ON(SOCKET0) == 0 ? F("[OK]") : F("[ERROR]"));
+  frame.createFrame(ASCII);                  // Create new ASCII frame
 
-
-  /* ??? SHOULD SLEEP TIME BE HIGHER? */
-  PWR.deepSleep("00:00:01:00", RTC_OFFSET, RTC_ALM1_MODE1, ALL_ON);
-
-  //=========| READ VALUES
   USB.ON();                             // Restart USB after sleep
   USB.println("Reading Sensor Values");
 
-  /* === Get snapshots from sensors temperature === */
-  float t = 0.0f;                                   // INITIALIZE AUX
+
+  // CO2 sensor needs temp, humidity and pressure in addition to its own measurement
+  SensorCitiesPRO.ON(SOCKET_F);
+  SensorCitiesPRO.ON(SOCKET_E);
+  gas_PRO_sensor.ON();
+
+  delay(60000);//Allow CO2 sensor to heat
+  // Get  snapshots from sensors CO2
+  float co2 = 0.0f;
   for (int i = 0; i < SNAPSHOTS; i++) {
-    t += gas_PRO_sensor.getTemp();                  // READ VALUES
+    co2 += gas_PRO_sensor.getConc();
+  }
+  co2 /= SNAPSHOTS;
+  frame.addSensor(SENSOR_CITIES_PRO_CO2, co2);
+
+  // Get snapshots from sensors temperature
+  float temperature = 0.0f;
+  for (int i = 0; i < SNAPSHOTS; i++) {
+    temperature += SensorCitiesPRO.getTemperature();//gas_PRO_sensor.getTemp();
     }
-  t /= SNAPSHOTS;                                   // CALCULATE AVERAGE
-  temperature = t;                                  // UPDATE VARIABLE
-  //========================================================================
+  temperature /= SNAPSHOTS;
+  frame.addSensor(SENSOR_CITIES_PRO_TC, temperature);
 
-  /* === Get snapshots from sensors humidity === */
-  float h = 0.0f;                                   // AUX
+  // Get snapshots from sensors humidity
+  float humidity = 0.0f;
   for (int i = 0; i < SNAPSHOTS; i++) {
-    h += gas_PRO_sensor.getHumidity();              // READ VALUES
+    humidity += SensorCitiesPRO.getHumidity();//gas_PRO_sensor.getHumidity();
   }
-  h /= SNAPSHOTS;                                   // CALCULATE AVERAGE
-  humidity = h;                                     // UPDATE VARIABLE
-  //========================================================================
+  humidity /= SNAPSHOTS;
+  frame.addSensor(SENSOR_CITIES_PRO_HUM, humidity);
 
-  /* === Get snapshots from sensors pressure === */
-  float p = 0.0f;
+  // Get snapshots from sensors pressure 
+  float pressure = 0.0f;
   for (int i = 0; i < SNAPSHOTS; i++) {
-    p += gas_PRO_sensor.getPressure();              // READ VALUES
+    pressure += SensorCitiesPRO.getPressure();//gas_PRO_sensor.getPressure();
   }
-  p /= SNAPSHOTS;                                   // CALCULATE AVERAGE
-  pressure = p;                                     // UPDATE VARIABLE
- //========================================================================
+  pressure /= SNAPSHOTS;
+  frame.addSensor(SENSOR_CITIES_PRO_PRES, pressure);
 
-  /* === Get  snapshots from sensors CO2 === */
-  float c = 0.0f;                                   // AUX
-  for (int i = 0; i < SNAPSHOTS; i++) {
-    c += gas_PRO_sensor.getConc();                  // READ VALUES
+  SensorCitiesPRO.OFF(SOCKET_F);
+  SensorCitiesPRO.OFF(SOCKET_E);
+
+
+  
+  // Get snapshots from sensors noise
+  SensorCitiesPRO.ON(SOCKET_A);
+  noise.configure();
+  if (noise.getSPLA(SLOW_MODE) != 0) {
+    USB.println(F("[CITIES PRO] Communication error. No response from the audio sensor (SLOW)"));
   }
-  c /= SNAPSHOTS;                                   // CALCULATE AVERAGE
-  co2 = c;                                          // UPDATE VARIABLE
-  //========================================================================
+  frame.addSensor(SENSOR_CITIES_PRO_NOISE, noise.SPLA);
+  SensorCitiesPRO.OFF(SOCKET_A);
 
-  /* === Get snapshots from sensors noise === */
-  int status = noise.getSPLA(SLOW_MODE);
 
-  if (status == 0) {
-    ambNoise = noise.SPLA;
-  } else {
-   ambNoise = -1;
-   USB.println(F("[CITIES PRO] Communication error. No response from the audio sensor (SLOW)"));
-  }
+  sendFrame(frame);
+  frame.createFrame(ASCII);
 
-  //========================================================================
-
-  /* === Get  snapshots from sensors PM === */
-  boolean OPC_status = OPC_N2.ON();           // Turn on the particle matter sensor
-  if (OPC_status == 1) {
-    int OPC_measure = OPC_N2.getPM(5000, 5000);
+  // Get  snapshots from sensors PM 
+  SensorCitiesPRO.OFF(SOCKET_D);
+  if (OPC_N2.ON()) {
+    if (!OPC_N2.getPM(5000, 5000))
+    {
+      USB.println(F("Error reading values from the particle sensor"));
+    }
   } else {
     USB.println(F("Error starting the particle sensor"));
   }
- //========================================================================
-
-  /* === Get  snapshots from sensors luminosity === */
-  SensorCitiesPRO.ON(SOCKET_C);                   // SENSOR ON SOCKET 2
-  TSL.ON();                                       // POWER ON SENSOR
-  float l = 0.0f;                                 // AUX
-  for (int i = 0; i < SNAPSHOTS; i++) {
-    l += TSL.getLuminosity();                     // READ VALUES
-  }
-  SensorCitiesPRO.OFF(SOCKET_C);                  // POWER OFF SOCKET 2
-  l /= SNAPSHOTS;                                 // CALCULATE AVERAGE
-  luminosity = l;                                // UPDATE ARRAY
-  //========================================================================}
-  /* Get current time */
-  RTC.ON();
-  RTC.getTime();
-
-  /* Build and send packets */
-  frame.createFrame(ASCII);                  // Create new ASCII frame
-
-  frame.addSensor(SENSOR_CITIES_PRO_TC, temperature);      // Add temperature“  frame.addSensor(SENSOR_CITIES_PRO_HUM, fHumidity);        // Add humidity
-  frame.addSensor(SENSOR_CITIES_PRO_PRES, pressure);       // Add pressure value
   frame.addSensor(SENSOR_CITIES_PRO_PM1, OPC_N2._PM1);      // Add PM1 value
   frame.addSensor(SENSOR_CITIES_PRO_PM2_5, OPC_N2._PM2_5);  // Add PM2.5 value
   frame.addSensor(SENSOR_CITIES_PRO_PM10, OPC_N2._PM10);    // Add PM10 value
-  frame.addSensor(SENSOR_CITIES_PRO_CO2, co2);             // Add CO2 ¨
-
-  frame.addSensor(TSL.lux, luminosity);      // ????? IS THIS THE RIGHT KEYWORD
-  frame.addSensor(SENSOR_TIME, RTC.hour, RTC.minute, RTC.second); // ADD TIME
-
-  frame.showFrame();                      // Print frame in buffer
-  //frame.encryptFrame(AES_128, AES_KEY);   // Encrypt frame
-
-  frameCounter++; // increase frame counter
-
-  //=========| POWER OFF SENSORS
-  SensorCitiesPRO.ON(SOCKET_B);
-  SensorCitiesPRO.ON(SOCKET_C);
-  SensorCitiesPRO.ON(SOCKET_E);
-
   OPC_N2.OFF();
+  SensorCitiesPRO.OFF(SOCKET_D);
 
-  /* Sleep Cycle */
-  USB.println(F("\nSystem Sleep"));  // Call off
+
+
+  // Get  snapshots from sensors luminosity
+  SensorCitiesPRO.ON(SOCKET_C);
+  float luminosity = 0.0f;
+  TSL.ON();
+  for (int i = 0; i < SNAPSHOTS; i++) {
+    TSL.getLuminosity(); 
+    luminosity += TSL.lux;
+  }
+  luminosity /= SNAPSHOTS;
+  SensorCitiesPRO.OFF(SOCKET_C);
+  frame.addSensor(SENSOR_CITIES_PRO_LUXES, luminosity);
+
+
+
+  // Get current time and bat
+  RTC.ON();
+  RTC.getTime();
+  frame.addSensor(SENSOR_TIME, RTC.hour, RTC.minute, RTC.second);
+  frame.addSensor(SENSOR_BAT, PWR.getBatteryLevel());
+
+  sendFrame(frame);
+
+  // Sleep Cycle 
+  USB.println(F("\nSystem Sleep"));
+  WIFI_PRO.OFF(SOCKET0);
   PWR.deepSleep("00:00:00:30", RTC_OFFSET, RTC_ALM1_MODE1, ALL_OFF);
-
-  USB.ON();                          // Restart USB
-  USB.println(F("\nAwake"));         // Call on
-
 }
+
+void sendFrame(WaspFrame frame)
+{
+  frame.showFrame(); // Print frame in buffer
+  
+  if (WIFI_PRO.isConnected() == true)
+  {
+    USB.println(F("[connected]"));
+    if (WIFI_PRO.sendFrameToMeshlium(type, host, port, frame.buffer, frame.length) == 0)
+    {
+      USB.println(F("HTTP query OK."));
+    }
+    else
+    {
+      USB.println(F("HTTP query ERROR"));
+      WIFI_PRO.printErrorCode();
+    }
+  }
+  else
+  {
+    USB.print(F("WiFi is not connected ERROR")); 
+    WIFI_PRO.printErrorCode();
+  }
+}
+
+
