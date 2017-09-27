@@ -1,3 +1,4 @@
-#define MAC_ADDRESS "0013A200409C788A"
-#define MOTE_ID "Waspmote_AP"
+#define WASPMOTE_ID "BOX_001"
 #define WIFI_PASSWORD "qwerty"
+#define SSID "adressaparken"
+#define SECURITY WPA2 // Alt: OPEN, WEP64, WEP128, WPA (WPA-PSK with TKIP encryption), WPA2 (WPA2-PSK with TKIP or AES encryption)
