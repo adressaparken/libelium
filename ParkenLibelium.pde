@@ -75,7 +75,8 @@ void setup() {
   USB.println(WIFI_PRO.setPassword(SECURITY, WIFI_PASSWORD) == 0 ? F("[OK]") : F("[ERROR]"));
   USB.println(F("Restart wifi"));
   USB.println(WIFI_PRO.softReset() == 0 ? F("[OK]") : F("[ERROR]"));
-  
+
+  RTC.setWatchdog(720);//restart box every 12 hours
 }
 
 
@@ -178,12 +179,12 @@ void loop(){
   
 
 
-  // Get current time and bat
-  RTC.ON();
-  RTC.getTime();
-  frame.addSensor(SENSOR_TIME, RTC.hour, RTC.minute, RTC.second);
+  // Get current battery level
+
   frame.addSensor(SENSOR_BAT, PWR.getBatteryLevel());
-  RTC.OFF();
+
+
+  frame.addSensor(SENSOR_STR, freeMemory());
 
   sendFrame(frame);
 
