@@ -56,7 +56,7 @@ int SNAPSHOTS =  10;
 Gas gas_PRO_sensor(CO2_SOCKET);
 
 char type[] = "http";
-char host[] = "10.10.10.1";
+char host[] = "192.168.1.1";
 char port[] = "80";
 
 
@@ -190,7 +190,7 @@ void loop(){
   // Sleep Cycle 
   USB.println(F("\nSystem Sleep"));
   WIFI_PRO.OFF(SOCKET0);
-  PWR.deepSleep("00:00:00:30", RTC_OFFSET, RTC_ALM1_MODE1, ALL_OFF);
+  PWR.deepSleep("00:00:05:00", RTC_OFFSET, RTC_ALM1_MODE1, ALL_OFF);
 }
 
 void sendFrame(WaspFrame frame)
