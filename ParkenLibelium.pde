@@ -74,7 +74,6 @@ char port[] = "80";
 
 // AUX
 ///////////////////////////////////////
-uint8_t SNAPSHOTS =  10;            // Number of snapshots per measurement
 Gas gas_PRO_sensor(CO2_SOCKET);     // Gases object
 ///////////////////////////////////////
 
@@ -99,10 +98,9 @@ void setup() {
 
 void loop(){
 
-  // Reset Aux: WIFI, USB and Frame
+  // Create Frame
   ///////////////////////////////////////
-  checkWIFI();
-  USB.println("Reading Sensor Values");
+  USB.println(F("Reading Sensor Values"));
   frame.createFrame(ASCII);
   ///////////////////////////////////////
 
@@ -117,49 +115,37 @@ void loop(){
   ///////////////////////////////////////
 
 
-  // Get snapshots from sensors: CO2
+  // Get read from sensors: CO2
   ///////////////////////////////////////
-  float co2 = 0.0f;
-  for (int i = 0; i < SNAPSHOTS; i++) {
-    co2 += gas_PRO_sensor.getConc();
-  }
+  float co2;
+  co2 = gas_PRO_sensor.getConc();
   if (co2 < 0) PWR.reboot();
-  co2 /= SNAPSHOTS;
   frame.addSensor(SENSOR_CITIES_PRO_CO2, co2);
   ///////////////////////////////////////
 
 
-  // Get snapshots from sensors: Temperature
+  // Get read from sensors: Temperature
   ///////////////////////////////////////
-  float temperature = 0.0f;
-  for (int i = 0; i < SNAPSHOTS; i++) {
-    temperature += SensorCitiesPRO.getTemperature();  //gas_PRO_sensor.getTemp();
-  }
+  float temperature;
+  temperature = SensorCitiesPRO.getTemperature()
   if (temperature < 0) PWR.reboot();
-  temperature /= SNAPSHOTS;
   frame.addSensor(SENSOR_CITIES_PRO_TC, temperature);
   ///////////////////////////////////////
 
 
-  // Get snapshots from sensors: Humidity
+  // Get read from sensors: Humidity
   ///////////////////////////////////////
-  float humidity = 0.0f;
-  for (int i = 0; i < SNAPSHOTS; i++) {
-    humidity += SensorCitiesPRO.getHumidity();  //gas_PRO_sensor.getHumidity();
-  }
+  float humidity;
+  humidity = SensorCitiesPRO.getHumidity();
   if (humidity < 0) PWR.reboot();
-  humidity /= SNAPSHOTS;
   frame.addSensor(SENSOR_CITIES_PRO_HUM, humidity);
   ///////////////////////////////////////
 
 
-  // Get snapshots from sensors: Pressure
+  // Get read from sensors: Pressure
   ///////////////////////////////////////
-  float pressure = 0.0f;
-  for (int i = 0; i < SNAPSHOTS; i++) {
-    pressure += SensorCitiesPRO.getPressure();  //gas_PRO_sensor.getPressure();
-  }
-  pressure /= SNAPSHOTS;
+  float pressure;
+  pressure += SensorCitiesPRO.getPressure();  //gas_PRO_sensor.getPressure();
   frame.addSensor(SENSOR_CITIES_PRO_PRES, pressure);
   ///////////////////////////////////////
 
@@ -189,7 +175,7 @@ void loop(){
   ///////////////////////////////////////
 
 
-  // Turn on and get snapshots from sensors: PM
+  // Turn on and get read from sensors: PM
   ///////////////////////////////////////
   SensorCitiesPRO.ON(PARTICLE_SOCKET);
   if (OPC_N2.ON()) {
@@ -208,16 +194,13 @@ void loop(){
   ///////////////////////////////////////
 
 
-  // Turn on and get snapshots from sensors: Luminosity
+  // Turn on and get read from sensors: Luminosity
   ///////////////////////////////////////
   SensorCitiesPRO.ON(LUMINOSITY_SOCKET);
-  float luminosity = 0.0f;
+  float luminosity;
   TSL.ON();
-  for (int i = 0; i < SNAPSHOTS; i++) {
-    TSL.getLuminosity();
-    luminosity += TSL.lux;
-  }
-  luminosity /= SNAPSHOTS;
+  TSL.getLuminosity();
+  luminosity = TSL.lux;
   frame.addSensor(SENSOR_CITIES_PRO_LUXES, luminosity);
   SensorCitiesPRO.OFF(LUMINOSITY_SOCKET);
   ///////////////////////////////////////
@@ -240,6 +223,7 @@ void loop(){
   WIFI_PRO.OFF(SOCKET0);
   PWR.deepSleep("00:00:05:00", RTC_OFFSET, RTC_ALM1_MODE1, ALL_OFF);
   USB.ON();                             // Restart USB after sleep
+  checkWIFI();                          // Restart WIFI after sleep
   ///////////////////////////////////////
 }
 
