@@ -49,7 +49,7 @@
 #include <WaspSensorCities_PRO.h>
 #include <WaspOPC_N2.h>             // Particle Matter
 #include <TSL2561.h>                // Luminosity
-#include <WaspSensorGas_Pro.h>      // Gases
+//#include <WaspSensorGas_Pro.h>      // Gases
 #include <WaspOPC_N2.h>             // Particle Matter
 ///////////////////////////////////////
 
@@ -75,6 +75,7 @@ char port[] = "80";
 // AUX
 ///////////////////////////////////////
 Gas gas_PRO_sensor(CO2_SOCKET);     // Gases object
+bmeGasesSensor bme;
 ///////////////////////////////////////
 
 void setup() {
@@ -110,6 +111,7 @@ void loop(){
   // CO2 sensor needs temp, humidity and pressure in addition to its own measurement
   SensorCitiesPRO.ON(CO2_SOCKET);
   SensorCitiesPRO.ON(TEMPHUMPRES_SOCKET);
+  bme.ON();
   gas_PRO_sensor.ON();
   delay(60000); //Allow sensors to heat
   ///////////////////////////////////////
@@ -127,7 +129,7 @@ void loop(){
   // Get read from sensors: Temperature
   ///////////////////////////////////////
   float temperature;
-  temperature = SensorCitiesPRO.getTemperature()
+  temperature = bme.getTemperature();
   if (temperature < 0) PWR.reboot();
   frame.addSensor(SENSOR_CITIES_PRO_TC, temperature);
   ///////////////////////////////////////
@@ -136,7 +138,7 @@ void loop(){
   // Get read from sensors: Humidity
   ///////////////////////////////////////
   float humidity;
-  humidity = SensorCitiesPRO.getHumidity();
+  humidity = bme.getHumidity();
   if (humidity < 0) PWR.reboot();
   frame.addSensor(SENSOR_CITIES_PRO_HUM, humidity);
   ///////////////////////////////////////
@@ -145,7 +147,7 @@ void loop(){
   // Get read from sensors: Pressure
   ///////////////////////////////////////
   float pressure;
-  pressure += SensorCitiesPRO.getPressure();  //gas_PRO_sensor.getPressure();
+  pressure += bme.getPressure();  //gas_PRO_sensor.getPressure();
   frame.addSensor(SENSOR_CITIES_PRO_PRES, pressure);
   ///////////////////////////////////////
 
@@ -281,7 +283,6 @@ void setupWIFI() {
   * @return void.
 */
 void checkWIFI() {
-
-  USB.print(F("Checking WIFI: ")));
+  USB.print(F("Checking WIFI: "));
   USB.println(WIFI_PRO.ON(SOCKET0) == 0 ? F("[OK]") : F("[ERROR]"));
 }
