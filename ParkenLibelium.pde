@@ -60,7 +60,7 @@ int NOISE_SOCKET        = SOCKET_A; // NLS       Noise Level Sensor             
 int LUMINOSITY_SOCKET   = SOCKET_C; // 9375-P    Luminosity Probe                                  lux
 int PARTICLE_SOCKET     = SOCKET_D; // 9387-P    Particle Matter (PM1 / PM2.5/ PM10) - Dust Probe  og/m3
 int TEMPHUMPRES_SOCKET  = SOCKET_E; // 9370-P    Temperature, Humidity and Pressure Probe          ºC - %RH - Pa
-int CO2_SOCKET          = SOCKET_F; // 9372-P    Carbon Dioxide Probe                              ppm
+// int CO2_SOCKET          = SOCKET_F; // 9372-P    Carbon Dioxide Probe                              ppm
 ///////////////////////////////////////
 
 
@@ -74,7 +74,7 @@ char port[] = "80";
 
 // AUX
 ///////////////////////////////////////
-Gas gas_PRO_sensor(CO2_SOCKET);     // Gases object
+//Gas gas_PRO_sensor(CO2_SOCKET);     // Gases object
 bmeGasesSensor bme;
 ///////////////////////////////////////
 
@@ -109,20 +109,20 @@ void loop(){
   // Turn on sensors
   ///////////////////////////////////////
   // CO2 sensor needs temp, humidity and pressure in addition to its own measurement
-  SensorCitiesPRO.ON(CO2_SOCKET);
+  //SensorCitiesPRO.ON(CO2_SOCKET);
   SensorCitiesPRO.ON(TEMPHUMPRES_SOCKET);
   bme.ON();
-  gas_PRO_sensor.ON();
+  //gas_PRO_sensor.ON();
   delay(60000); //Allow sensors to heat
   ///////////////////////////////////////
 
 
   // Get read from sensors: CO2
   ///////////////////////////////////////
-  float co2;
-  co2 = gas_PRO_sensor.getConc();
-  if (co2 < 0) PWR.reboot();
-  frame.addSensor(SENSOR_CITIES_PRO_CO2, co2);
+  //float co2;
+  //co2 = gas_PRO_sensor.getConc();
+  //if (co2 < 0) PWR.reboot();
+  //frame.addSensor(SENSOR_CITIES_PRO_CO2, co2);
   ///////////////////////////////////////
 
 
@@ -130,7 +130,7 @@ void loop(){
   ///////////////////////////////////////
   float temperature;
   temperature = bme.getTemperature();
-  if (temperature < 0) PWR.reboot();
+  if (temperature < -100) PWR.reboot();
   frame.addSensor(SENSOR_CITIES_PRO_TC, temperature);
   ///////////////////////////////////////
 
@@ -154,7 +154,7 @@ void loop(){
 
   // Turn Off Sensors
   ///////////////////////////////////////
-  SensorCitiesPRO.OFF(CO2_SOCKET);
+  //SensorCitiesPRO.OFF(CO2_SOCKET);
   SensorCitiesPRO.OFF(TEMPHUMPRES_SOCKET);
 
 
