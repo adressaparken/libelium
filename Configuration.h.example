@@ -2,3 +2,4 @@
 #define WIFI_PASSWORD "qwerty"
 #define SSID "adressaparken"
 #define SECURITY WPA2 // Alt: OPEN, WEP64, WEP128, WPA (WPA-PSK with TKIP encryption), WPA2 (WPA2-PSK with TKIP or AES encryption)
+#define HOSTNAME "libeliumsensor.parken"

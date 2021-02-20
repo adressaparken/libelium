@@ -67,7 +67,6 @@ int TEMPHUMPRES_SOCKET  = SOCKET_E; // 9370-P    Temperature, Humidity and Press
 // Network Settings
 ///////////////////////////////////////
 char type[] = "http";
-char host[] = "192.168.1.1";
 char port[] = "80";
 ///////////////////////////////////////
 
@@ -172,7 +171,7 @@ void loop(){
 
   // Send frame and create new
   ///////////////////////////////////////
-  sendFrame(frame);
+  sendFrame();
   frame.createFrame(ASCII);
   ///////////////////////////////////////
 
@@ -217,7 +216,7 @@ void loop(){
 
   // Send frame and sleep
   ///////////////////////////////////////
-  sendFrame(frame);
+  sendFrame();
 
 
   // Sleep Cycle
@@ -235,13 +234,12 @@ void loop(){
   * @param frame - WaspFrame object to send.
   * @return void.
 */
-void sendFrame(WaspFrame frame) {
-
+void sendFrame() {
   frame.showFrame(); // Print frame in buffer
 
   if (WIFI_PRO.isConnected() == true) {
     USB.println(F("[connected]"));
-    if (WIFI_PRO.sendFrameToMeshlium(type, host, port, frame.buffer, frame.length) == 0) {
+    if (WIFI_PRO.sendFrameToMeshlium(type, HOSTNAME, port, frame.buffer, frame.length) == 0) {
       USB.println(F("HTTP query OK."));
     } else {
       USB.println(F("HTTP query ERROR"));
