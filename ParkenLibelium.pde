@@ -239,7 +239,7 @@ void sendFrame() {
 
   if (WIFI_PRO.isConnected() == true) {
     USB.println(F("[connected]"));
-    if (WIFI_PRO.sendFrameToMeshlium(type, HOSTNAME, port, frame.buffer, frame.length) == 0) {
+    if (WIFI_PRO.sendFrameToMeshlium(type, SERVER_HOSTNAME, port, frame.buffer, frame.length) == 0) {
       USB.println(F("HTTP query OK."));
     } else {
       USB.println(F("HTTP query ERROR"));
